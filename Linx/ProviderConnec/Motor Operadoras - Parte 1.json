@@ -1,0 +1,380 @@
+{
+  "name": "Motor Operadoras - Parte 1",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "d8c55e12-dc16-4006-8a88-d86c4397caae",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "b03b3897-7e51-46dc-a601-875ab3d7f50e",
+      "name": "Webhook",
+      "webhookId": "d8c55e12-dc16-4006-8a88-d86c4397caae"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        304,
+        176
+      ],
+      "id": "7810b4b9-ba7d-407d-84c8-f189b3822890",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "USztDcGvhGQAJreY",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"mensagem\": \"Olá, equipe do NOC. Identificamos uma queda de link no circuito de São Paulo (Alerta Zabbix ID: 99482). Poderiam verificar a estabilidade do sinal na região e abrir um chamado técnico para nós, por favor?\",\n  \"numero\": \"5511999999999\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        624,
+        176
+      ],
+      "id": "1eaac866-8826-4913-92e0-951e1f155d1e",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "linx",
+        "remoteJid": "=+55{{ $('Agente de primeiro contato').item.json.output.numero }}",
+        "messageText": "={{ $('Agente de primeiro contato').item.json.output.mensagem }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        928,
+        0
+      ],
+      "id": "5915e7e9-a541-437c-a198-506e72ab79db",
+      "name": "Envia mensagem no whatsapp",
+      "credentials": {
+        "evolutionApi": {
+          "id": "l8EoZLjhgPMm0aKm",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1iiuNI1524pa9eJiRdNPatMm8V15XEyoe4FNCCmjjmhY/edit?usp=sharing",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Página1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iiuNI1524pa9eJiRdNPatMm8V15XEyoe4FNCCmjjmhY/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Operadora": "={{ $('padronização dos campos').item.json.data.operadora }}",
+            "Status": "processando",
+            "data": "={{ $now.format('dd-LL-yyyy HH:mm') }}",
+            "dados": "={{ $('padronização dos campos').item.json.data }}",
+            "mensagem_inicial": "={{ $json.output.mensagem }}",
+            "numero": "={{ $json.output.numero }}"
+          },
+          "matchingColumns": [
+            "Operadora"
+          ],
+          "schema": [
+            {
+              "id": "Operadora",
+              "displayName": "Operadora",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "numero",
+              "displayName": "numero",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "dados",
+              "displayName": "dados",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "mensagem_inicial",
+              "displayName": "mensagem_inicial",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        704,
+        0
+      ],
+      "id": "32fd6603-2df7-4872-99ea-98dd065b35b1",
+      "name": "adiciona no controle de acionamentos",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "5H6yvtNYOwJCj3Hv",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"data\": {\n    \"operadora\": {{ $json.body.operadora }},\n    \"designacao\": {{ $json.body.designacao }},\n    \"eventid\": {{ $json.body.eventid }},\n  }\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        192,
+        0
+      ],
+      "id": "6c92132a-209b-4cdf-ba47-29b9d8e3721a",
+      "name": "padronização dos campos"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.data }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Você é o \"Agente de Primeiro Contato\", um sistema automatizado especialista e exclusivo para geração de mensagens de abertura de chamados técnicos junto a operadoras de telecomunicações. Seu comportamento deve ser estritamente baseado em dados de infraestrutura (NOC) e engenharia de redes.\n\nSeu único objetivo é receber os dados de um incidente de rede, usar as ferramentas disponíveis para buscar informações adicionais da operadora e estruturar a mensagem final de acionamento que será enviada via WhatsApp.\n\n### 🚫 REGRAS DE ESCOPO CRÍTICAS\n1. EXCLUSIVIDADE: Você apenas gera mensagens de ABERTURA de chamados. Nunca gere textos solicitando status, atualizações ou cancelamento de protocolos.\n2. CONTEXTO FECHADO: Utilize apenas os dados recebidos no input e os dados retornados pela ferramenta do Google Sheets. Nunca invente IDs de circuitos, nomes de operadoras, telefones ou comportamentos técnicos que não estejam explicitamente declarados.\n3. NUNCA informe o eventid no corpo da mensagem.\n\n### 🔄 INSTRUÇÕES DE PROCESSAMENTO E FLUXO\n1. Colete os dados de entrada fornecidos pelo Webhook (Operadora, Designação/Circuito e EventID).\n2. Utilize OBRIGATORIAMENTE a ferramenta \"Get row(s) in sheet in Google Sheets\" passando o nome da operadora para buscar os dados cadastrais necessários (como contatos, formato de mensagens específico ou SLAs).\n3. Com as informações consolidadas, elabore o texto da mensagem seguindo o tom e formato exigidos.\n\n### ✍️ TOM E FORMATO DA MENSAGEM\nA mensagem final gerada deve ser profissional, técnica, polida e direta ao ponto (linguagem típica de NOC). Ela deve conter claramente:\n- Saudação formal à equipe de suporte/NOC da operadora.\n- O motivo do contato (ex: queda de link, indisponibilidade).\n- Os identificadores técnicos recebidos: o ID do Alerta/Evento (eventid) e a Identificação do Circuito (designacao).\n- Uma solicitação explícita de abertura de protocolo técnico e o envio do número do chamado de volta.\n\n### ⚙️ SAÍDA OBRIGATÓRIA (OUTPUT STRUCTURE)\nVocê deve responder estritamente no formato JSON exigido pelo Output Parser do fluxo, preenchendo os seguintes campos:\n- \"mensagem\": O texto completo, formatado e profissional que será enviado à operadora.\n- \"numero\": O número de telefone de destino da operadora (que você deve extrair/validar a partir dos dados retornados pela planilha ou pelo payload de entrada).\n\nNão adicione nenhuma introdução, explicação ou texto fora do JSON estruturado na sua resposta final."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        368,
+        0
+      ],
+      "id": "a2df2115-7faa-47e2-9525-f4ee2424e22c",
+      "name": "Agente de primeiro contato"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1C1-4DiL9AFfsOWaesTUcRk-6pYV5HoMx9aCoUzALrKk/edit?usp=sharing",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Página1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1C1-4DiL9AFfsOWaesTUcRk-6pYV5HoMx9aCoUzALrKk/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "operadora",
+              "lookupValue": "={{ $json.data.operadora }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        464,
+        176
+      ],
+      "id": "f43b0147-cbf2-43b1-af7b-17da0559ba2a",
+      "name": "base_contatos_operadoras",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "5H6yvtNYOwJCj3Hv",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "content-type": "application/json",
+            "user-agent": "PostmanRuntime/7.54.0",
+            "accept": "*/*",
+            "postman-token": "ef637dd2-f490-4d5c-9a87-c1fdabae16b7",
+            "host": "localhost:5678",
+            "accept-encoding": "gzip, deflate, br",
+            "connection": "keep-alive",
+            "content-length": "111"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "operadora": "LIGGA",
+            "numero": "11930550936",
+            "designacao": "123",
+            "eventid": "4067909523"
+          },
+          "webhookUrl": "http://localhost:5678/webhook-test/d8c55e12-dc16-4006-8a88-d86c4397caae",
+          "executionMode": "test"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "padronização dos campos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente de primeiro contato",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Agente de primeiro contato",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "adiciona no controle de acionamentos": {
+      "main": [
+        [
+          {
+            "node": "Envia mensagem no whatsapp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "padronização dos campos": {
+      "main": [
+        [
+          {
+            "node": "Agente de primeiro contato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente de primeiro contato": {
+      "main": [
+        [
+          {
+            "node": "adiciona no controle de acionamentos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "base_contatos_operadoras": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente de primeiro contato",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "80d1addc-0eda-4cf2-afad-d6eab70eaa51",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "39f98648101a4aea0e9a57003c20b21fe1e77585ca99182bbf134b9eae8eba8b"
+  },
+  "id": "tsXwp2ik3kqSjxKd",
+  "tags": []
+}

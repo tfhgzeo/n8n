@@ -1,0 +1,625 @@
+{
+  "name": "Motor Operadora - Parte 2",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "32de1077-f600-4dd8-9511-ffb21d558e4f",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        224,
+        -64
+      ],
+      "id": "90e83feb-c986-4f1a-9446-680cc2e3984b",
+      "name": "Webhook",
+      "webhookId": "32de1077-f600-4dd8-9511-ffb21d558e4f"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"data\": {\n    \"mensagem\": \"{{ $('Webhook').item.json.body.data.message.conversation }}\",\n    \"numero\": \"{{ $json.body.data.key.remoteJid.split(\"@\")[0].split(\"55\")[1]}},\n  }\n}\n ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        432,
+        -64
+      ],
+      "id": "cf273752-749c-4f22-912e-860401f153fa",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.fullMessage }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Você é o \"Agente de Interação com Operadoras\" com o nome Liz, um sistema automatizado responsável por dar continuidade ao atendimento de chamados de infraestrutura (NOC) via WhatsApp. Seu objetivo é interagir com o suporte da operadora, responder às solicitações técnicas necessárias para a abertura do protocolo e identificar quando o número do protocolo foi gerado.\n\n### 🔍 FONTE DE DADOS E CONTEXTO (OBRIGATÓRIO)\nPara entender o contexto do chamado, você DEVE utilizar obrigatoriamente a ferramenta \"motor_de_operadoras_processamento\". A partir dela, você deve extrair e considerar em todas as suas respostas:\n1. A PRIMEIRA MENSAGEM que foi gerada e enviada para a operadora (para saber exatamente o que foi relatado inicialmente).\n2. Todos os dados técnicos fornecidos pelo motor (como Identificador do Circuito/Designação, EventID do Zabbix, nome da operadora e dados cadastrais atrelados).\n\nUse essas informações combinadas com a última resposta da operadora para formular suas réplicas de forma precisa, sem repetir dados desnecessariamente, mas mantendo a coerência com o problema original.\n\n### 🛡️ DIRETRIZES DE SEGURANÇA E LGPD (CRÍTICO)\n1. INFORMAÇÕES PERMITIDAS: Você só pode fornecer dados estritamente técnicos ligados ao circuito ou ao incidente obtidos através do \"motor_de_operadoras_processamento\" (ex: ID do circuito, comportamento de alarmística, logs de queda).\n2. SEGURANÇA DE DADOS (LGPD): Nunca forneça informações sensíveis, dados pessoais de colaboradores (como CPF, e-mail pessoal, telefone direto de técnicos), senhas de infraestrutura, dados financeiros ou qualquer informação que não tenha relação estrita com o diagnóstico do circuito.\n3. Se a operadora solicitar dados sensíveis ou fora de escopo, recuse educadamente dizendo que não possui essa informação e peça para seguirem com os testes técnicos.\n\n### 📋 ESCOPO E COMPORTAMENTO\n1. Interaja de forma técnica, formal e objetiva (padrão NOC).\n2. Siga as instruções de testes ou perguntas feitas pela operadora (ex: \"pediram para testar o cabo\", \"perguntaram se o equipamento está ligado\"). Responda de forma direta com base no histórico ou confirme que a validação técnica interna/local já foi feita.\n3. Varra a mensagem recebida da operadora em busca do Número de Protocolo ou Código de Chamado.\n4. Caso a operadora solicite testes físicos no link deve informar que ja foram realizados e não surtiram efeito, reforçando a necessidade da abertura de protocolo. \n\n### ⚙️ ESTRUTURA DE SAÍDA OBRIGATÓRIA (JSON)\nVocê deve responder ESTREITAMENTE no formato JSON abaixo. Não adicione nenhuma introdução, explicação ou caracteres fora do JSON.\n\n{\n    \"mensagem\": \"Texto da sua resposta formal e técnica que será enviada para a operadora via WhatsApp\",\n    \"protocolo_encontrado\": true ou false (coloque true APENAS se a operadora enviou o número do protocolo nesta interação ou em interações imediatamente anteriores),\n    \"numero_protocolo\": \"O número do protocolo encontrado\" ou \"-\" (se protocolo_encontrado for false, use estritamente \"-\"),\n    \"eventid\": \"eventid encontado na planilha de base\"\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        832,
+        -64
+      ],
+      "id": "0894c790-4a05-4fa3-955f-b591ef2a2927",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.1-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        624,
+        144
+      ],
+      "id": "e9999c50-11bc-4436-8642-5f2614f2b0a9",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "USztDcGvhGQAJreY",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Webhook').item.json.body.data.key.remoteJid }}",
+        "contextWindowLength": 30
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        784,
+        144
+      ],
+      "id": "bf68f9b7-667b-4efa-9d5c-26a2862a5adf",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n    \"mensagem\": \"Texto da sua resposta formal e técnica que será enviada para a operadora via WhatsApp\",\n    \"protocolo_encontrado\": true,\n    \"numero_protocolo\": \"O número do protocolo encontrado\",\n    \"eventid\": \"123123\" \n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1088,
+        144
+      ],
+      "id": "30eaac34-b483-4aba-82c7-3156eabf37e3",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d148f070-67e9-441c-99d5-f9c6dd7c51fb",
+              "leftValue": "={{ $('AI Agent').item.json.output.protocolo_encontrado }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1392,
+        -64
+      ],
+      "id": "9a4ba576-e3c2-4d45-840a-984845896e65",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "linx",
+        "remoteJid": "={{ \"+55\" + $('Edit Fields').item.json.data.numero }}",
+        "messageText": "={{ $('AI Agent').item.json.output.mensagem }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        1184,
+        -64
+      ],
+      "id": "e622206a-d64a-46c8-964a-3555afea948b",
+      "name": "Enviar texto",
+      "credentials": {
+        "evolutionApi": {
+          "id": "l8EoZLjhgPMm0aKm",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1iiuNI1524pa9eJiRdNPatMm8V15XEyoe4FNCCmjjmhY",
+          "mode": "list",
+          "cachedResultName": "motor_de_operadoras_processamento",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iiuNI1524pa9eJiRdNPatMm8V15XEyoe4FNCCmjjmhY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Página1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iiuNI1524pa9eJiRdNPatMm8V15XEyoe4FNCCmjjmhY/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "numero": "={{ $('Edit Fields').item.json.data.numero }}",
+            "eventid": "4067909523",
+            "Status": "finalizado"
+          },
+          "matchingColumns": [
+            "eventid"
+          ],
+          "schema": [
+            {
+              "id": "eventid",
+              "displayName": "eventid",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Operadora",
+              "displayName": "Operadora",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "numero",
+              "displayName": "numero",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "designacao",
+              "displayName": "designacao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "endereco",
+              "displayName": "endereco",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mensagem_inicial",
+              "displayName": "mensagem_inicial",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "USER_ENTERED"
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1648,
+        -128
+      ],
+      "id": "a1a81ed6-cfba-44c4-b401-a7648037a95b",
+      "name": "atualiza controle de acionamento",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "5H6yvtNYOwJCj3Hv",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1iiuNI1524pa9eJiRdNPatMm8V15XEyoe4FNCCmjjmhY/edit?usp=sharing",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Página1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iiuNI1524pa9eJiRdNPatMm8V15XEyoe4FNCCmjjmhY/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "numero",
+              "lookupValue": "={{ $('Edit Fields').item.json.data.numero }}"
+            },
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "processando"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        928,
+        144
+      ],
+      "id": "f3e101d9-d9a8-4731-9462-d0d990904998",
+      "name": "base_controle_de_acionamento",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "5H6yvtNYOwJCj3Hv",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionId": "={{ $json.data.numero }}",
+        "message": "={{ $json.data.mensagem }}",
+        "debounceWindow": 30,
+        "options": {}
+      },
+      "type": "n8n-nodes-message-debounce.messageDebounce",
+      "typeVersion": 1,
+      "position": [
+        624,
+        -64
+      ],
+      "id": "96f0b35d-9810-496d-9956-584dc84a35e7",
+      "name": "Message Debounce",
+      "credentials": {
+        "redisApi": {
+          "id": "JfAEclYUSmOTpxCw",
+          "name": "Redis account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "accept": "application/json, text/plain, */*",
+            "content-type": "application/json",
+            "user-agent": "axios/1.13.2",
+            "content-length": "1766",
+            "accept-encoding": "gzip, compress, deflate, br",
+            "host": "172.20.0.10:5678",
+            "connection": "keep-alive"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "event": "messages.upsert",
+            "instance": "linx",
+            "data": {
+              "key": {
+                "remoteJid": "5511963370119@s.whatsapp.net",
+                "remoteJidAlt": "5511963370119@s.whatsapp.net",
+                "fromMe": false,
+                "id": "3EB0DD616A5875420F4D96",
+                "participant": "",
+                "addressingMode": "lid"
+              },
+              "pushName": "G",
+              "status": "DELIVERY_ACK",
+              "message": {
+                "messageContextInfo": {
+                  "threadId": [],
+                  "deviceListMetadata": {
+                    "senderKeyIndexes": [],
+                    "recipientKeyIndexes": [],
+                    "senderKeyHash": {
+                      "0": 22,
+                      "1": 169,
+                      "2": 226,
+                      "3": 123,
+                      "4": 156,
+                      "5": 69,
+                      "6": 191,
+                      "7": 209,
+                      "8": 94,
+                      "9": 36
+                    },
+                    "senderTimestamp": {
+                      "low": 1779457454,
+                      "high": 0,
+                      "unsigned": true
+                    },
+                    "senderAccountType": 0,
+                    "receiverAccountType": 0,
+                    "recipientKeyHash": {
+                      "0": 41,
+                      "1": 109,
+                      "2": 18,
+                      "3": 64,
+                      "4": 136,
+                      "5": 106,
+                      "6": 51,
+                      "7": 132,
+                      "8": 137,
+                      "9": 134
+                    },
+                    "recipientTimestamp": {
+                      "low": 1779477576,
+                      "high": 0,
+                      "unsigned": true
+                    }
+                  },
+                  "deviceListMetadataVersion": 2,
+                  "messageSecret": {
+                    "0": 60,
+                    "1": 216,
+                    "2": 44,
+                    "3": 135,
+                    "4": 113,
+                    "5": 31,
+                    "6": 221,
+                    "7": 67,
+                    "8": 30,
+                    "9": 63,
+                    "10": 225,
+                    "11": 252,
+                    "12": 175,
+                    "13": 114,
+                    "14": 199,
+                    "15": 184,
+                    "16": 12,
+                    "17": 97,
+                    "18": 112,
+                    "19": 13,
+                    "20": 48,
+                    "21": 33,
+                    "22": 233,
+                    "23": 36,
+                    "24": 50,
+                    "25": 89,
+                    "26": 241,
+                    "27": 151,
+                    "28": 44,
+                    "29": 168,
+                    "30": 132,
+                    "31": 150
+                  },
+                  "limitSharingV2": {
+                    "trigger": 0,
+                    "initiatedByMe": false
+                  }
+                },
+                "conversation": "Aberto o protocolo 123123123"
+              },
+              "contextInfo": {
+                "mentionedJid": [],
+                "groupMentions": [],
+                "statusAttributions": [],
+                "ephemeralSettingTimestamp": {
+                  "low": 1779573620,
+                  "high": 0,
+                  "unsigned": false
+                },
+                "disappearingMode": {
+                  "initiator": 0,
+                  "trigger": 1,
+                  "initiatedByMe": false
+                }
+              },
+              "messageType": "conversation",
+              "messageTimestamp": 1779746458,
+              "instanceId": "203e9ddb-6ef4-41b4-8fe7-0dab0e8988f3",
+              "source": "web"
+            },
+            "destination": "http://172.20.0.10:5678/webhook-test/32de1077-f600-4dd8-9511-ffb21d558e4f",
+            "date_time": "2026-05-25T19:00:58.577Z",
+            "sender": "5511930550936@s.whatsapp.net",
+            "server_url": "http://localhost:8080",
+            "apikey": "9948648DF970-4891-B760-E945F1823E7D"
+          },
+          "webhookUrl": "http://172.20.0.10:5678/webhook-test/32de1077-f600-4dd8-9511-ffb21d558e4f",
+          "executionMode": "test"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Message Debounce",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Enviar texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "atualiza controle de acionamento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Enviar texto": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "base_controle_de_acionamento": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message Debounce": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "9984a37a-a8a5-48b8-adb9-f3fb799dbd58",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "39f98648101a4aea0e9a57003c20b21fe1e77585ca99182bbf134b9eae8eba8b"
+  },
+  "id": "i5GTyorBQmkslpq1",
+  "tags": []
+}

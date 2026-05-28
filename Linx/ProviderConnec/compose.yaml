@@ -1,0 +1,97 @@
+services:
+  # --- BANCO DE DADOS (POSTGRESQL) ---
+  postgres:
+    image: postgres:15-alpine
+    container_name: evolution_db
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      n8n_evolution_net:
+        ipv4_address: 172.20.0.30
+    environment:
+      - POSTGRES_USER=evolution_user
+      - POSTGRES_PASSWORD=evolution_pass
+      - POSTGRES_DB=evolution_db
+    ports:
+      - "5432:5432"
+
+  # --- CACHE E FILAS (REDIS OBRIGATÓRIO) ---
+  redis:
+    image: redis:7-alpine
+    container_name: evolution_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      n8n_evolution_net:
+        ipv4_address: 172.20.0.40
+
+
+    # --- NAVEGADOR ISOLADO PARA O PUPPETEER ---
+  browserless:
+    image: ghcr.io/browserless/chromium:latest
+    container_name: n8n_browserless
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    networks:
+      n8n_evolution_net:
+        ipv4_address: 172.20.0.50
+    environment:
+      - MAX_CONCURRENT_SESSIONS=5
+      - CONNECTION_TIMEOUT=60000
+      - PRE_BOOT_CHROME=true
+      - DEMO_MODE=false
+  # --- AUTOMAÇÃO (N8N) ---
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      n8n_evolution_net:
+        ipv4_address: 172.20.0.10
+    environment:
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - N8N_SECURE_COOKIE=false
+      - WEBHOOK_URL=http://172.20.0.10:5678/
+    depends_on:
+      - browserless
+
+  # --- WHATSAPP API ---
+  evolution:
+    image: evoapicloud/evolution-api:latest
+    container_name: evolution_api
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - "8080:8080"
+    networks:
+      n8n_evolution_net:
+        ipv4_address: 172.20.0.20
+    env_file:
+          - .env.evolution
+
+networks:
+  n8n_evolution_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  n8n_data:
+    external: true
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
