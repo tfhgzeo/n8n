@@ -49,4 +49,4 @@ Para rodar a maioria destes fluxos, recomenda-se:
 Este repositório é para fins de estudo e portfólio. Sinta-se à vontade para clonar e adaptar, mas lembre-se de respeitar os termos de serviço das APIs utilizadas.
 
 ---
-*Mantido por [Seu Nome/GitHub]*
+*Mantido por Bigas*
